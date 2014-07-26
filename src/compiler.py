@@ -9,6 +9,7 @@ from model import Constant
 from model import Function
 from model import FunctionCall
 from model import FunctionMention
+from model import LogicOperation
 from model import Program
 from model import VariableMention
 
@@ -72,6 +73,10 @@ def syntax_to_expression(syntax, variable_names):
     if label == 'if':
         assert len(child_expressions) == 3, "wrong number of arguments to if"
         return Conditional(*child_expressions)
+
+    if label in LogicOperation.operations:
+        return LogicOperation.generate_operation(label, child_expressions)
+
     ## otherwise it's a function call probably
     return FunctionCall(label, child_expressions)
 

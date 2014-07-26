@@ -60,6 +60,34 @@ class Program:
                 line = line.replace(label, str(offset))
             self.instructions[i] = line
 
+class LogicOperation:
+    operations = ['and', 'or', 'not']
+
+    @classmethod
+    def generate_operation(cls, operator, child_expressions):
+        assert operator in cls.operations
+        if operator == 'and': # a AND b
+            return Conditional(
+                FunctionCall('==', [Constant(0), child_expressions[0]]),
+                Constant(0), # a == 0
+                Conditional( # a != 0
+                    FunctionCall('==', [Constant(0), child_expressions[1]]),
+                    Constant(0), # b == 0
+                    Constant(1)))
+        if operator == 'or': # a OR b
+            return Conditional(
+                FunctionCall('==', [Constant(1), child_expressions[0]]),
+                Constant(1), # a == 1
+                Conditional( # a != 1
+                    FunctionCall('==', [Constant(1), child_expressions[1]]),
+                    Constant(1), # b == 1
+                    Constant(0))) # b != 1
+        if operator == 'not': # NOT a
+                return Conditional(
+                    FunctionCall('==', [Constant(1), child_expressions[0]]),
+                    Constant(0), # a == 1
+                    Constant(1)) # a != 0
+
 class FunctionCall:
     def __init__(self, funcname, child_expressions):
         self.funcname = funcname
