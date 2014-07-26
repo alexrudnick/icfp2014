@@ -60,11 +60,12 @@ class Conditional:
             self.expression, self.true_case, self.false_case)
 
 class VariableMention:
-    def __init__(self, name):
+    def __init__(self, name, index):
         self.name = name
+        self.index = index
 
     def __str__(self):
-        return "(VARIABLEMENTION {0})".format(self.name)
+        return "(VARIABLEMENTION {0}[{1}])".format(self.name, self.index)
 
 class FunctionMention:
     def __init__(self, name):

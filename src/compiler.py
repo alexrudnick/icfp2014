@@ -26,10 +26,12 @@ def syntax_to_function(syntax):
 
     ## TODO: if this is a defun, just remember the name.
     ## if it's a lambda, just make the function object and gensym it.
+    # TODO: Check for duplicates.
     argument_names = flatten_argument_tree(syntax[1])
+
     return Function(syntax[0], # function name
                     argument_names, # arguments
-                    syntax_to_expression(syntax[2], set(argument_names))) # body
+                    syntax_to_expression(syntax[2], argument_names)) # body
 
 def syntax_to_program(syntax):
     assert(syntax.label() == 'program')
@@ -45,14 +47,15 @@ def syntax_to_expression(syntax, variable_names):
         ## if it's a constant...
         if syntax.isnumeric():
             return Constant(int(syntax))
-        elif syntax.isalnum():
-            ## either a variable or a function name
-            if syntax in Program.function_names:
-                return FunctionMention(syntax)
-            if syntax in variable_names:
-                return VariableMention(syntax)
-            else:
-                assert False, "don't know what to do with token '{0}'".format(syntax)
+
+        ## either a variable or a function name
+        assert(syntax.isalnum())
+        if syntax in Program.function_names:
+            return FunctionMention(syntax)
+        if syntax in variable_names:
+            return VariableMention(syntax, variable_names.index(syntax))
+        assert False, "don't know what to do with token '{0}'".format(syntax)
+
     assert type(syntax) is nltk.Tree
     label = syntax.label()
 
