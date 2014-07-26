@@ -52,3 +52,9 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+## vim detritus
+*.swp
+*.swo
+
+## venv detritus
+venv/
