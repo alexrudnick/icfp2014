@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import re
 import sys
 import nltk
@@ -13,12 +14,11 @@ from model import LogicOperation
 from model import Program
 from model import VariableMention
 
-def parse(fn):
+def parse_code_string(code):
     pat = re.compile(r";.*[\n]")
-    with open(fn) as infile:
-        text = '(program' + infile.read() + '\n)'
-        text = re.sub(pat, "", text)
-        return nltk.Tree.fromstring(text)
+    code = '(program' + code + '\n)'
+    code = re.sub(pat, "", code)
+    return nltk.Tree.fromstring(code)
 
 def flatten_argument_tree(tree):
     if not tree.label():
@@ -80,27 +80,38 @@ def syntax_to_expression(syntax, variable_names):
     ## otherwise it's a function call probably
     return FunctionCall(label, child_expressions)
 
-def main():
-    assert len(sys.argv) > 1, "need a filename to compile"
-    syntaxtree = parse(sys.argv[1])
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Compile kinda-LISP to LambdaMan.')
+    parser.add_argument('-d', '--debug', action='store_true',
+                        help='Print debugging information.')
+    parser.add_argument('source_files',
+                        metavar='FILE',
+                        type=argparse.FileType('r'),
+                        nargs="+",
+                        help='Files to compile.')
+    args = parser.parse_args()
 
-    print("Tree'd input:")
-    print(syntaxtree.pprint())
-    program = syntax_to_program(syntaxtree)
+    source_code = "\n".join([file.read() for file in args.source_files])
+    parsed_input = parse_code_string(source_code)
+    if args.debug:
+        print("Tree'd input:")
+        print(parsed_input.pprint())
 
-    print("\nAST:")
-    print(nltk.Tree.fromstring(str(program)).pprint())
+    program = syntax_to_program(parsed_input)
+    if args.debug:
+        print("\nAST:")
+        print(nltk.Tree.fromstring(str(program)).pprint())
 
     program.write_instructions()
-    print("function offsets:", program.function_offsets)
-    print("blanche offsets:", program.branch_offsets)
-    print("\nMachine Code with labels:")
-    for line in program.instructions:
-        print(line)
+    if args.debug:
+        print("function offsets:", program.function_offsets)
+        print("blanche offsets:", program.branch_offsets)
+        print("\nMachine Code with labels:")
+        for line in program.instructions:
+            print(line)
 
     program.labels_to_offsets()
-    print("\nActual machine code:")
+    if args.debug:
+        print("\nActual machine code:")
     for line in program.instructions:
         print(line)
-
-if __name__ == "__main__": main()
