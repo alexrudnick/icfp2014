@@ -31,11 +31,10 @@ def syntax_to_function(syntax):
     ## TODO: if this is a defun, just remember the name.
     ## if it's a lambda, just make the function object and gensym it.
     # TODO: Check for duplicates.
+    function_name = syntax[0]
     argument_names = flatten_argument_tree(syntax[1])
-
-    return Function(syntax[0], # function name
-                    argument_names, # arguments
-                    syntax_to_expression(syntax[2], argument_names)) # body
+    child_expressions = [syntax_to_expression(child_syntax, argument_names) for child_syntax in syntax[2:]]
+    return Function(function_name, argument_names, child_expressions)
 
 def syntax_to_program(syntax):
     assert(syntax.label() == 'program')

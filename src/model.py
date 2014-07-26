@@ -99,6 +99,7 @@ class FunctionCall:
             'cons': 'CONS',
             'cdr': 'CDR',
             'car': 'CAR',
+            'debug': 'DBUG',
             '+': 'ADD',
             '-': 'SUB',
             '*': 'MUL',
@@ -144,17 +145,17 @@ class Function:
     maths = ['+', '-', '*', '/', '<', '>', '==', '>=', '<=']
     list_builtins = ['cons', 'cdr', 'car']
 
-    def __init__(self, funcname, argument_names, body):
+    def __init__(self, funcname, argument_names, child_expressions):
         self.funcname = funcname
         self.argument_names = argument_names
-        self.body = body
+        self.child_expressions = child_expressions
         Function.functions[funcname] = self
 
     @classmethod
     def number_of_args_for_function_name(self, funcname):
         if funcname in Function.maths or funcname == 'cons':
             return 2
-        if funcname in ['cdr', 'car']:
+        if funcname in ['cdr', 'car', 'debug']:
             return 1
         return len(Function.functions[funcname].argument_names)
 
@@ -167,7 +168,8 @@ class Function:
 
     def write_instructions(self, function_offsets, branch_offsets, instructions):
         function_offsets["%" + self.funcname] = len(instructions)
-        self.body.write_instructions(function_offsets, branch_offsets, instructions)
+        for expression in self.child_expressions:
+            expression.write_instructions(function_offsets, branch_offsets, instructions)
         instructions.append("RTN")
 
 class Constant:
