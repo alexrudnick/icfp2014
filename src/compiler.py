@@ -50,7 +50,7 @@ def syntax_to_expression(syntax, variable_names):
 
         ## either a variable or a function name
         assert(syntax.isalnum())
-        if syntax in Program.function_names:
+        if syntax in Function.functions:
             return FunctionMention(syntax)
         if syntax in variable_names:
             return VariableMention(syntax, variable_names.index(syntax))
@@ -77,5 +77,15 @@ def main():
 
     print("\nAST:")
     print(nltk.Tree.fromstring(str(program)).pprint())
+
+    print("\nMachine Code:")
+    ## functions maps from function name to offset into the body.
+    functions = {}
+    ## branches maps from magic branch id to offset into the body.
+    branches = {}
+    body = []
+    program.write_instructions(functions, branches, body)
+    for line in body:
+        print(line)
 
 if __name__ == "__main__": main()

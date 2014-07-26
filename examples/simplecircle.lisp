@@ -3,4 +3,4 @@
     (cons 1 0)
     (cons (+ 1 state) state)))
 
-(function1 0 100)
+(cons 0 function1)
