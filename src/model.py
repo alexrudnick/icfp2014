@@ -64,15 +64,13 @@ class FunctionCall:
     def __init__(self, funcname, child_expressions):
         self.funcname = funcname
         self.child_expressions = child_expressions
+        self.reverse_child_expressions = self.funcname in ['<', '<=']
 
-    def __str__(self):
-        out = "(CALL {0} ".format(self.funcname)
-        out += " ".join(str(exp) for exp in self.child_expressions)
-        out += ")"
-        return out
-
-    def write_maths_instructions(self, function_offsets, branch_offsets, instructions):
-        easy = {
+    def instructions_for_func_call(self):
+        simple = {
+            'cons': 'CONS',
+            'cdr': 'CDR',
+            'car': 'CAR',
             '+': 'ADD',
             '-': 'SUB',
             '*': 'MUL',
@@ -80,12 +78,19 @@ class FunctionCall:
             '==': 'CEQ',
             '>': 'CGT',
             '>=': 'CGTE',
-            '>=': 'CGTE',
+
+            '<=': 'CGT', # Arguments are reversed.
+            '<': 'CGTE', # Arguments are reversed.
         }
-        if self.funcname in easy:
-            instructions.append(easy[self.funcname])
-            return
-        assert False, "OOOPS"
+        if self.funcname in simple:
+            return [simple[self.funcname]]
+        return["LDF %{0}".format(self.funcname), "AP {0}".format(number_of_args)]
+
+    def __str__(self):
+        out = "(CALL {0} ".format(self.funcname)
+        out += " ".join(str(exp) for exp in self.child_expressions)
+        out += ")"
+        return out
 
     def write_list_instructions(self, function_offsets, branch_offsets, instructions):
         instructions.append(self.funcname.upper())
@@ -97,19 +102,14 @@ class FunctionCall:
             "Wrong number of arguments to {0}. " \
             "Got {0}, expected {1}".format(number_of_args, expected_number_of_args)
 
-        for expression in self.child_expressions:
+        expressions_copy = list(self.child_expressions)
+        if self.reverse_child_expressions:
+            expressions_copy.reverse()
+        for expression in expressions_copy:
             expression.write_instructions(function_offsets, branch_offsets, instructions)
 
-        if self.funcname in Function.maths:
-            self.write_maths_instructions(function_offsets, branch_offsets, instructions)
-            return
+        instructions += self.instructions_for_func_call()
 
-        if self.funcname in Function.list_builtins:
-            self.write_list_instructions(function_offsets, branch_offsets, instructions)
-            return
-
-        instructions.append("LDF %{0}".format(self.funcname))
-        instructions.append("AP {0}".format(number_of_args))
 
 class Function:
     functions = {}
