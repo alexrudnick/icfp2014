@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 import sys
 import nltk
 
@@ -12,8 +13,10 @@ from model import Program
 from model import VariableMention
 
 def parse(fn):
+    pat = re.compile(r";.*[\n]")
     with open(fn) as infile:
-        text = '(program' + infile.read() + ')'
+        text = '(program' + infile.read() + '\n)'
+        text = re.sub(pat, "", text)
         return nltk.Tree.fromstring(text)
 
 def flatten_argument_tree(tree):
@@ -49,7 +52,7 @@ def syntax_to_expression(syntax, variable_names):
             return Constant(int(syntax))
 
         ## either a variable or a function name
-        assert(syntax.isalnum())
+        assert(syntax.isalnum()), syntax
         if syntax in Function.functions:
             return FunctionMention(syntax)
         if syntax in variable_names:
