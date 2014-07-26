@@ -21,13 +21,6 @@ def flatten_argument_tree(tree):
         return []
     return [tree.label()] + [leaf for leaf in tree]
 
-def main():
-    assert len(sys.argv) > 1, "need a filename to compile"
-    syntaxtree = parse(sys.argv[1])
-
-    print(syntaxtree.pprint())
-    program = syntax_to_program(syntaxtree)
-
 def syntax_to_function(syntax):
     assert(syntax.label() == 'defun')
 
@@ -40,11 +33,10 @@ def syntax_to_function(syntax):
 
 def syntax_to_program(syntax):
     assert(syntax.label() == 'program')
-
     ## instantiate children
     functions = [syntax_to_function(item) for item in syntax[:-1]]
     mainexp = syntax_to_expression(syntax[-1], set())
-    thing = Program(functions, mainexp)
+    return Program(functions, mainexp)
 
 def syntax_to_expression(syntax, variable_names):
     """Recursive function."""
@@ -71,5 +63,16 @@ def syntax_to_expression(syntax, variable_names):
         return Conditional(*child_expressions)
     ## otherwise it's a function call probably
     return FunctionCall(label, child_expressions)
+
+def main():
+    assert len(sys.argv) > 1, "need a filename to compile"
+    syntaxtree = parse(sys.argv[1])
+
+    print("Tree'd input:")
+    print(syntaxtree.pprint())
+    program = syntax_to_program(syntaxtree)
+
+    print("\nAST:")
+    print(nltk.Tree.fromstring(str(program)).pprint())
 
 if __name__ == "__main__": main()
