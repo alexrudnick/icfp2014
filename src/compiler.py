@@ -43,6 +43,10 @@ def syntax_to_program(syntax):
     mainexp = syntax_to_expression(syntax[-1], set())
     return Program(functions, mainexp)
 
+def valid_variable_name(s):
+    """True if the string is an OK variable name."""
+    return re.match(r"^[A-Za-z0-9-]+", s)
+
 def syntax_to_expression(syntax, variable_names):
     """Recursive function."""
 
@@ -52,7 +56,8 @@ def syntax_to_expression(syntax, variable_names):
             return Constant(int(syntax))
 
         ## either a variable or a function name
-        assert(syntax.isalnum()), syntax
+        assert(valid_variable_name(syntax)), \
+            "bad variable name: {0}".format(syntax)
         if syntax in Function.functions:
             return FunctionMention(syntax)
         if syntax in variable_names:
