@@ -84,7 +84,7 @@ class FunctionCall:
         }
         if self.funcname in simple:
             return [simple[self.funcname]]
-        return["LDF %{0}".format(self.funcname), "AP {0}".format(number_of_args)]
+        return["LDF %{0}".format(self.funcname), "AP {0}".format(len(self.child_expressions))]
 
     def __str__(self):
         out = "(CALL {0} ".format(self.funcname)
