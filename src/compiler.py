@@ -78,14 +78,16 @@ def main():
     print("\nAST:")
     print(nltk.Tree.fromstring(str(program)).pprint())
 
-    print("\nMachine Code:")
-    ## functions maps from function name to offset into the body.
-    functions = {}
-    ## branches maps from magic branch id to offset into the body.
-    branches = {}
-    body = []
-    program.write_instructions(functions, branches, body)
-    for line in body:
+    program.write_instructions()
+    print("function offsets:", program.function_offsets)
+    print("blanche offsets:", program.branch_offsets)
+    print("\nMachine Code with labels:")
+    for line in program.instructions:
+        print(line)
+
+    program.labels_to_offsets()
+    print("\nActual machine code:")
+    for line in program.instructions:
         print(line)
 
 if __name__ == "__main__": main()

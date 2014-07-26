@@ -4,8 +4,14 @@
 
 class Program:
     def __init__(self, functions, mainexp):
+        ## XXX: nb, we're keeping all of the functions both on the Program
+        ## object and as a class variable on Function; may need to clean up
+        ## later.
         self.functions = functions
         self.mainexp = mainexp
+        self.function_offsets = {} # name -> offset in instructions
+        self.branch_offsets = {}  # branchid -> offset in instructions
+        self.instructions = []  # list of instructions
 
     def __str__(self):
         out = "(PROGRAM "
@@ -15,25 +21,44 @@ class Program:
         out += ")"
         return out
 
-    def write_instructions(self, functions, branches, body):
+    def write_instructions(self):
         ## first part: main expression
-        self.mainexp.write_instructions(functions, branches, body)
-        body.append("RTN")
+        self.mainexp.write_instructions(self.function_offsets,
+                                        self.branch_offsets,
+                                        self.instructions)
+        self.instructions.append("RTN")
 
         ## then we put all the functions
         for func in self.functions:
-            func.write_instructions(functions, branches, body)
+            func.write_instructions(self.function_offsets,
+                                    self.branch_offsets,
+                                    self.instructions)
 
-        ## but we left out all the conditional branches. now add those.
+        ## but we left out all the conditional branch_offsets. now add those.
         for conditional in Conditional.conditionals:
             tag_true = "%{0}-true".format(conditional.conditional_id)
-            tag_false = " %{0}-false".format(conditional.conditional_id)
-            branches[tag_true] = len(body)
-            conditional.true_case.write_instructions(functions, branches, body)
-            body.append("JOIN")
-            branches[tag_false] = len(body)
-            conditional.false_case.write_instructions(functions, branches, body)
-            body.append("JOIN")
+            tag_false = "%{0}-false".format(conditional.conditional_id)
+            self.branch_offsets[tag_true] = len(self.instructions)
+            conditional.true_case.write_instructions(self.function_offsets,
+                                                     self.branch_offsets,
+                                                     self.instructions)
+            self.instructions.append("JOIN")
+            self.branch_offsets[tag_false] = len(self.instructions)
+            conditional.false_case.write_instructions(self.function_offsets,
+                                                      self.branch_offsets,
+                                                      self.instructions)
+            self.instructions.append("JOIN")
+
+    def labels_to_offsets(self):
+        """Make all of our labels be numeric offsets."""
+        for i,line in enumerate(self.instructions):
+            # change all the branch labels
+            for label, offset in self.branch_offsets.items():
+                line = line.replace(label, str(offset))
+            # change all the function labels
+            for label, offset in self.function_offsets.items():
+                line = line.replace(label, str(offset))
+            self.instructions[i] = line
 
 class FunctionCall:
     def __init__(self, funcname, child_expressions):
@@ -46,7 +71,7 @@ class FunctionCall:
         out += ")"
         return out
 
-    def write_maths_instructions(self, functions, branches, body):
+    def write_maths_instructions(self, function_offsets, branch_offsets, instructions):
         easy = {
             '+': 'ADD',
             '-': 'SUB',
@@ -58,14 +83,14 @@ class FunctionCall:
             '>=': 'CGTE',
         }
         if self.funcname in easy:
-            body.append(easy[self.funcname])
+            instructions.append(easy[self.funcname])
             return
         assert False, "OOOPS"
 
-    def write_list_instructions(self, functions, branches, body):
-        body.append(self.funcname.upper())
+    def write_list_instructions(self, function_offsets, branch_offsets, instructions):
+        instructions.append(self.funcname.upper())
 
-    def write_instructions(self, functions, branches, body):
+    def write_instructions(self, function_offsets, branch_offsets, instructions):
         expected_number_of_args = Function.number_of_args_for_function_name(self.funcname)
         number_of_args = len(self.child_expressions)
         assert number_of_args == expected_number_of_args, \
@@ -73,18 +98,18 @@ class FunctionCall:
             "Got {0}, expected {1}".format(number_of_args, expected_number_of_args)
 
         for expression in self.child_expressions:
-            expression.write_instructions(functions, branches, body)
+            expression.write_instructions(function_offsets, branch_offsets, instructions)
 
         if self.funcname in Function.maths:
-            self.write_maths_instructions(functions, branches, body)
+            self.write_maths_instructions(function_offsets, branch_offsets, instructions)
             return
 
         if self.funcname in Function.list_builtins:
-            self.write_list_instructions(functions, branches, body)
+            self.write_list_instructions(function_offsets, branch_offsets, instructions)
             return
 
-        body.append("LDF %f{0}".format(self.funcname))
-        body.append("AP {0}".format(number_of_args))
+        instructions.append("LDF %{0}".format(self.funcname))
+        instructions.append("AP {0}".format(number_of_args))
 
 class Function:
     functions = {}
@@ -95,7 +120,6 @@ class Function:
         self.funcname = funcname
         self.argument_names = argument_names
         self.body = body
-
         Function.functions[funcname] = self
 
     @classmethod
@@ -113,10 +137,10 @@ class Function:
         out += ") "
         return out
 
-    def write_instructions(self, functions, branches, body):
-        functions[self.funcname] = len(body)
-        self.body.write_instructions(functions, branches, body)
-        body.append("RTN")
+    def write_instructions(self, function_offsets, branch_offsets, instructions):
+        function_offsets["%" + self.funcname] = len(instructions)
+        self.body.write_instructions(function_offsets, branch_offsets, instructions)
+        instructions.append("RTN")
 
 class Constant:
     def __init__(self, value):
@@ -125,8 +149,8 @@ class Constant:
     def __str__(self):
         return "(CONSTANT {0})".format(self.value)
 
-    def write_instructions(self, functions, branches, body):
-        body.append("LDC {0}".format(self.value))
+    def write_instructions(self, function_offsets, branch_offsets, instructions):
+        instructions.append("LDC {0}".format(self.value))
 
 class Conditional:
     gensym_num = 0
@@ -150,9 +174,9 @@ class Conditional:
         return "(CONDITIONAL {0} {1} {2})".format(
             self.expression, self.true_case, self.false_case)
 
-    def write_instructions(self, functions, branches, body):
-        self.expression.write_instructions(functions, branches, body)
-        body.append("SEL %{0}-true %{0}-false".format(self.conditional_id))
+    def write_instructions(self, function_offsets, branch_offsets, instructions):
+        self.expression.write_instructions(function_offsets, branch_offsets, instructions)
+        instructions.append("SEL %{0}-true %{0}-false".format(self.conditional_id))
         ## both branches get written at the end, see Program.write_instructions
 
 class VariableMention:
@@ -163,8 +187,8 @@ class VariableMention:
     def __str__(self):
         return "(VARIABLEMENTION {0}[{1}])".format(self.name, self.index)
 
-    def write_instructions(self, functions, branches, body):
-        body.append("LD 0 {0}".format(self.index))
+    def write_instructions(self, function_offsets, branch_offsets, instructions):
+        instructions.append("LD 0 {0}".format(self.index))
 
 class FunctionMention:
     def __init__(self, funcname):
@@ -173,5 +197,5 @@ class FunctionMention:
     def __str__(self):
         return "(FUNCTIONMENTION {0})".format(self.funcname)
 
-    def write_instructions(self, functions, branches, body):
-        body.append("LDF %{0}".format(self.funcname))
+    def write_instructions(self, function_offsets, branch_offsets, instructions):
+        instructions.append("LDF %{0}".format(self.funcname))
