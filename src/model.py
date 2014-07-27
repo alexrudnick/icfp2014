@@ -2,6 +2,8 @@
 
 ## this is like our IR. So we turn the nltk Tree into a tree of this.
 
+import re
+
 class Program:
     def __init__(self, functions, mainexp):
         ## XXX: nb, we're keeping all of the functions both on the Program
@@ -53,11 +55,14 @@ class Program:
         """Make all of our labels be numeric offsets."""
         for i,line in enumerate(self.instructions):
             # change all the branch labels
+            words = line.split()
             for label, offset in self.branch_offsets.items():
-                line = line.replace(label, str(offset))
-            # change all the function labels
+                words = [str(offset) if word == label else word
+                         for word in words]
             for label, offset in self.function_offsets.items():
-                line = line.replace(label, str(offset))
+                words = [str(offset) if word == label else word
+                         for word in words]
+            line = " ".join(words)
             self.instructions[i] = line
 
 class LogicOperation:
@@ -128,7 +133,7 @@ class FunctionCall:
         number_of_args = len(self.child_expressions)
         assert number_of_args == expected_number_of_args, \
             "Wrong number of arguments to {0}. " \
-            "Got {0}, expected {1}".format(number_of_args, expected_number_of_args)
+            "Got {1}, expected {2}".format(self.funcname, number_of_args, expected_number_of_args)
 
         expressions_copy = list(self.child_expressions)
         if self.reverse_child_expressions:
