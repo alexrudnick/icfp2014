@@ -144,17 +144,23 @@
          (cons (cons (cons x y) 0) 0) ;; search node in list
          0))
 
-;;(dfs-to-depth 5
-;;              themap 
-;;              (cons (cons (cons x y) 0) 0) ;; search node in list
-;;              0))
+(defun ids-return-path (path)
+  ;; given a path, return a tuple containing the cdr of the path and the move we
+  ;; want to make, ie, the car of the path.
+  (cons (cdr path) (car path)))
 
 (defun ids-bot (state world)
-  ;; find the path to the nearest pill or power pill and take a step towards it
-  (cons 0 (car (ids-path-to-pill
-                  (getthemap world)
-                  (car (location world))
-                  (cdr (location world))))))
+  ;; find the path to the nearest pill or power pill and take a step towards it.
+  ;; state, if non-zero, is the current path we're on.
+  (if (not (atom state))
+    (cons (cdr state) (car state))
+
+    ;; otherwise, we have to re-plan.
+    (ids-return-path
+      (ids-path-to-pill
+                      (getthemap world)
+                      (car (location world))
+                      (cdr (location world))))))
 
 (defun map-value-at (themap x y)
   (elt (elt themap y) x))
