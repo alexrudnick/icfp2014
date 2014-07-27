@@ -23,10 +23,22 @@ function runStep() {
             return true;
         }
 
-        if (state.stop_reason == "TraceStop")
-            return true;
+        if (state.stop_reason == "TraceStop") {
+           $("#state").html(renderState(window.program, window.state.state));
+            console.log('Next instruction: ' +
+                $(".instr")[0].children[1].innerText + ' ' +
+                $(".instr")[0].children[2].innerText);
 
-        console.log("unknown state");
+            console.log('Data stack and control stack:');
+            var stack = $('.dataframe');
+            for (var i = 0; i < stack.length; i++) {
+                console.log('   ' + stack[i].innerHTML);
+            }
+
+            return true;
+        }
+
+        console.log("Unknown state");
         return true;
     });
 
@@ -73,6 +85,10 @@ function scriptDirectory() {
 function loadAndRunLispProgram(lispFilename) {
     child_process.execFile(scriptDirectory() + "/compiler.py", [lispFilename], null,
         function (err, stdout, stderr) {
+            console.log(stderr);
+            if (err != 0)
+                phantom.exit();
+
             runProgram(stdout);
         });
 }
