@@ -133,13 +133,14 @@
 
 (defun ids-help (depth result themap fresh-stack)
   (if (not (atom result)) result
-      (ids (+ 1 depth)
+      (ids (+ 1 depth) ;; we can bump this up to go faster, or multiply even!
            themap
            fresh-stack
            0)))
 
 (defun ids-path-to-pill (themap x y)
-    (ids 1
+    (ids 1             ;; could also start with bigger search for speed
+                       ;; (at the expense of accuracy, of course)
          themap
          (cons (cons (cons x y) 0) 0) ;; search node in list
          0))
