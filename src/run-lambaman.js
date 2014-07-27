@@ -86,7 +86,7 @@ function loadAndRunLispProgram(lispFilename) {
     child_process.execFile(scriptDirectory() + "/compiler.py", [lispFilename], null,
         function (err, stdout, stderr) {
             console.log(stderr);
-            if (err != 0)
+            if (stderr.length > 0)
                 phantom.exit();
 
             runProgram(stdout);
