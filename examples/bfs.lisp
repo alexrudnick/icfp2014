@@ -94,7 +94,7 @@
 ;; so we really want to be like ...
 ;; get a thing from the queue. if it's a winner, return the path!
 ;; for each possible direction from that thing, if it's not in the seen
-;; list, enqueue it.
+;; list or a wall, enqueue it.
 ;; search states are represented as (cons LOCATION PATH)
 ;; ... where PATH is a proper list containing the list of directions for
 ;; getting there from the location we're searching from.
@@ -103,11 +103,15 @@
       (cdr (car queue)) 
       (bfs
         themap
-        (maybe-append (newsearchnode (car queue) 0) themap seen
-          (maybe-append (newsearchnode (car queue) 1) themap seen
-            (maybe-append (newsearchnode (car queue) 2) themap seen
-              (maybe-append (newsearchnode (car queue) 3) themap seen
-                (cdr queue)))))
+        (maybe-append (newsearchnode (car queue) 0) themap
+                      (cons (car (car queue)) seen)
+          (maybe-append (newsearchnode (car queue) 1) themap
+                        (cons (car (car queue)) seen)
+            (maybe-append (newsearchnode (car queue) 2) themap
+                          (cons (car (car queue)) seen)
+              (maybe-append (newsearchnode (car queue) 3) themap
+                            (cons (car (car queue)) seen)
+                            (cdr queue)))))
         (cons (car (car queue)) seen))))
 
 (defun bfs-path-to-pill (themap x y)
