@@ -106,12 +106,14 @@
         (maybe-append (newsearchnode (car queue) 0) themap seen
           (maybe-append (newsearchnode (car queue) 1) themap seen
             (maybe-append (newsearchnode (car queue) 2) themap seen
-              (maybe-append (newsearchnode (car queue) 3) themap seen queue))))
+              (maybe-append (newsearchnode (car queue) 3) themap seen
+                (cdr queue)))))
         (cons (car (car queue)) seen))))
 
 (defun bfs-path-to-pill (themap x y)
   (bfs themap
-       (cons (cons x y) 0)
+       (cons (cons (cons x y) 0)
+             0)
        0))
 
 (defun bfs-bot (state world)
@@ -138,9 +140,9 @@
 (defun build-search-node ()
   (cons (cons 1 1) 0))
 
-(bfs-path-to-pill
-     (buildmap)
-     2 2)
+;;(bfs-path-to-pill
+;;     (buildmap)
+;;     1 1)
 
 ;; for reals, do this.
-;; (cons 0 bfs-bot)
+(cons 0 bfs-bot)
