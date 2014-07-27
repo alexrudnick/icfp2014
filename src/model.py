@@ -105,6 +105,7 @@ class FunctionCall:
             'cdr': 'CDR',
             'car': 'CAR',
             'debug': 'DBUG',
+            'atom': 'ATOM',
             '+': 'ADD',
             '-': 'SUB',
             '*': 'MUL',
@@ -160,7 +161,7 @@ class Function:
     def number_of_args_for_function_name(self, funcname):
         if funcname in Function.maths or funcname == 'cons':
             return 2
-        if funcname in ['cdr', 'car', 'debug']:
+        if funcname in ['cdr', 'car', 'debug', 'atom']:
             return 1
         return len(Function.functions[funcname].argument_names)
 
