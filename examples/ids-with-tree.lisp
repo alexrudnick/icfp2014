@@ -234,17 +234,19 @@
             treedepth))))
 
 (defun ids (depth fresh-stack seen map-tree width treedepth)
+  (if (> depth 20)
+      0
   (ids-help depth
             (dfs-to-depth depth fresh-stack seen
                           map-tree width treedepth)
             fresh-stack
             map-tree
             width
-            treedepth))
+            treedepth)))
 
 (defun ids-help (depth result fresh-stack map-tree width treedepth)
   (if (not (atom result)) result
-      (ids (+ 1 depth) ;; we can bump this up to go faster, or multiply even!
+      (ids (+ 2 depth) ;; we can bump this up to go faster, or multiply even!
            fresh-stack
            0
            map-tree width treedepth)))
@@ -293,15 +295,39 @@
 (defun state-treedepth (state)
   (cdr (cdr (cdr state))))
 
+;; lambda-man's heading
+(defun world-heading (world)
+  (car (cdr (cdr (car (cdr world))))))
+
+;; try turning right
+(defun next-heading (heading)
+  (if (== heading 3) 0
+      (+ 1 heading)))
+
+(defun default-plan (state world)
+  ;; construct a path if IDS isn't working
+  ;; are we pointed at a wall?
+  (if (iswall (state-map-tree state)
+              (state-width state)
+              (state-treedepth state)
+              (+ (car (location world)) (directiondx (world-heading world)))
+              (+ (cdr (location world)) (directiondy (world-heading world))))
+    (cons (next-heading (world-heading world)) 0)
+    (cons (world-heading world) 0)))
+
 (defun ids-return-with-new-plan (thenewplan state world)
-    (cons (construct-new-state (cdr thenewplan) ;; path, minus first step
-                               (state-map-tree state) ;; map-tree, etc...
-                               (state-width state)
-                               (state-treedepth state)
-                               (car (location world))
-                               (cdr (location world))
-                               (car thenewplan))
-          (car thenewplan)))
+    (if (atom thenewplan) ;; no plan back from IDS
+      (ids-return-with-new-plan (default-plan state world)
+                                state world)
+
+      (cons (construct-new-state (cdr thenewplan) ;; path, minus first step
+                                 (state-map-tree state) ;; map-tree, etc...
+                                 (state-width state)
+                                 (state-treedepth state)
+                                 (car (location world))
+                                 (cdr (location world))
+                                 (car thenewplan))
+            (car thenewplan))))
 
 (defun ids-bot (state world)
   ;; find the path to the nearest pill or power pill and take a step towards it.
