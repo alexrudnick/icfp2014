@@ -65,11 +65,21 @@ def produce_operation(operator, operand):
         code.append('MOV a,0')
         code.append('JEQ +2,0,0')
         code.append('MOV a,1')
-    elif (operator ==  '!='): # a-b == 0 (false)
+    elif (operator ==  '!='):
         code.append('JEQ +3,a,{0}'.format(get_atom_production(operand)))
         code.append('MOV a,1')
         code.append('JEQ +2,0,0')
         code.append('MOV a,0')
+    elif (operator ==  '<'):
+        code.append('JLT +3,a,{0}'.format(get_atom_production(operand)))
+        code.append('MOV a,0')
+        code.append('JEQ +2,0,0')
+        code.append('MOV a,1')
+    elif (operator ==  '>'):
+        code.append('JGT +3,a,{0}'.format(get_atom_production(operand)))
+        code.append('MOV a,0')
+        code.append('JEQ +2,0,0')
+        code.append('MOV a,1')
     else:
         assert False, "Unknown operator " + operator
 
@@ -126,7 +136,7 @@ def push_while(tokens):
     while_stack.append(label)
     code.append("{0}-start:".format(label))
     produce_expression(tokens[0])
-    code.append("JEQ {0}, a, 0".format(label + "-end"))
+    code.append("JEQ {0},a,0".format(label + "-end"))
 
 def pop_while(tokens):
     global code
@@ -183,7 +193,6 @@ def print_final_machine_code():
     for (i, line) in enumerate(code):
         print("{0:15} ; line {1}".format(line, i))
 
-
 def convert(source_lines):
     constant = Word(nums)
     variable = Word(alphas).setResultsName("variable")
@@ -191,7 +200,8 @@ def convert(source_lines):
     op = Literal("+") | Literal("-") | \
          Literal("*") | Literal("/") | \
          Literal("&") | Literal("|" ) | \
-         Literal("^") | Literal("==") | Literal("!=")
+         Literal("^") | \
+        Literal("==") | Literal("!=") | Literal("<") | Literal(">")
     atom = constant | variable.setResultsName('variable')
     expression = (atom + ZeroOrMore(op + atom))
     set_statement = \
@@ -230,8 +240,9 @@ def convert(source_lines):
     setup_environment()
     print(program.parseString("""
         n := 3;
-        while (n) do
+        while (n > 0) do
             debug();
+            n := n - 1;
         endwhile
         set_ghost_direction(3);
     """))
