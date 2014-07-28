@@ -142,8 +142,8 @@
 
 (defun search-node-is-dot (searchnode map-tree width treedepth)
   (member
-    (map-tree-lookup (car (car searchnode))
-                     (cdr (car searchnode))
+    (map-tree-lookup (car (car (cdr searchnode)))
+                     (cdr (car (cdr searchnode)))
                      map-tree
                      width
                      treedepth)
@@ -177,52 +177,58 @@
   ;; might return a new stack, or the same old stack
   ;; if the specified direction from the current search node has not been seen,
   ;; and is not a wall, add it to the stack.
-  (if (and (location-not-in-seen (car node) seen)
+  (if (and (location-not-in-seen (searchnode-location node) seen)
            (and
-               (< (length (cdr node)) depth)
+               (<= (car node) depth)
                (not (iswall map-tree width treedepth
-                                   (car (car node))
-                                   (cdr (car node))))))
+                                   (car (searchnode-location node))
+                                   (cdr (searchnode-location node))))))
       ;; true case: return a new queue where we've added a new search node.
       (cons node stack)
       ;; false case: skip it and give back the same stack
       stack))
 
 (defun newsearchnode (oldnode direction)
-  ;; search nodes are (cons LOCATION PATH)
-  (cons (cons (+ (directiondx direction) (car (car oldnode)))
-              (+ (directiondy direction) (cdr (car oldnode))))
-        (append (cdr oldnode) direction)))
+  ;; search nodes are (LENGTH, LOCATION, PATH)
+  (cons (+ 1 (car oldnode))
+        (cons (cons (+ (directiondx direction) (car (searchnode-location  oldnode)))
+                    (+ (directiondy direction) (cdr (searchnode-location oldnode))))
+              (cons direction (cdr (cdr oldnode))))))
 
 ;; so we really want to be like ...
 ;; get a thing from the queue. if it's a winner, return the path!
 ;; for each possible direction from that thing, if it's not in the seen
 ;; list or a wall, enqueue it.
-;; search states are represented as (cons LOCATION PATH)
+;; search states are represented as (LENGTH, LOCATION, PATH)
 ;; ... where PATH is a proper list containing the list of directions for
 ;; getting there from the location we're searching from.
+
+(defun searchnode-location (node)
+  (car (cdr node)))
 
 (defun dfs-to-depth (depth stack seen map-tree width treedepth)
   (if (atom stack)
       0 ;;; 999
       (if (search-node-is-dot (car stack) map-tree width treedepth)
-          (cdr (car stack))
+          ;; return that path, just reverse it.
+          (reverse (cdr (cdr (car stack))))
           (dfs-to-depth
             depth
             (maybe-cons (newsearchnode (car stack) 0)
                         map-tree width treedepth 
-                        depth (cons (car (car stack)) seen)
+                        depth (cons (searchnode-location (car stack)) seen)
               (maybe-cons (newsearchnode (car stack) 1)
                           map-tree width treedepth 
-                          depth (cons (car (car stack)) seen)
+                          depth (cons (searchnode-location (car stack)) seen)
                 (maybe-cons (newsearchnode (car stack) 2)
                             map-tree width treedepth 
-                            depth (cons (car (car stack)) seen)
+                            depth (cons (searchnode-location (car stack)) seen)
                   (maybe-cons (newsearchnode (car stack) 3)
                               map-tree width treedepth 
-                              depth (cons (car (car stack)) seen)
+                              depth (cons (searchnode-location (car stack)) seen)
                     (cdr stack)))))
-            (cons (car (car stack)) seen)
+            ;; cons the location into seen
+            (cons (searchnode-location (car stack)) seen)
             map-tree
             width
             treedepth))))
@@ -246,7 +252,9 @@
 (defun ids-path-to-pill (x y map-tree width treedepth)
     (ids 1             ;; could also start with bigger search for speed
                        ;; (at the expense of accuracy, of course)
-         (cons (cons (cons x y) 0) 0) ;; search node in list
+         (cons
+            (cons 0 (cons (cons x y) 0))
+            0) ;; search node in list
          0
          map-tree width treedepth))
 
@@ -332,7 +340,7 @@
                         0)))) )
 
 (defun build-search-node ()
-  (cons (cons 1 1) 0))
+  (cons 0 (cons (cons 1 1) 0)))
 
 (defun build-demo-world ()
   (cons (build-map)
