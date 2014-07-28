@@ -3,7 +3,10 @@ icfp2014
 
 Our ICFP Contest 2014 entry for Team "They Are On A Team"!
 
-"They Are On A Team" is: Martin Robinson and Alex Rudnick
+Team "They Are On A Team" is:
+
+  * [Martin Robinson](http://abandonedwig.info/)
+  * [Alex Rudnick](http://alexr.cc)
 
 Languages used: Python, JavaScript, Lisp [0] ...
 
@@ -29,5 +32,4 @@ General Compute Coprocessor instruction set...
 This was fun, thanks! :D
 
 -- 
--- Team "They Are On A Team"
--- The Bay Area, July 2014
+-- Team "They Are On A Team", The Bay Area, July 2014
