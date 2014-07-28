@@ -250,24 +250,75 @@
          0
          map-tree width treedepth))
 
-(defun ids-return-path (path)
-  ;; given a path, return a tuple containing the cdr of the path and the move we
-  ;; want to make, ie, the car of the path.
-  (cons (cdr path) (car path)))
+(defun update-tree (tr path newvalue)
+  (if (atom path)
+      newvalue
+      (if (car path) ;; if we go right...
+          (cons
+           (car tr)
+           (update-tree (cdr tr)
+                        (cdr path)
+                        newvalue))
+          (cons
+           (update-tree (car tr)
+                        (cdr path)
+                        newvalue)
+           (cdr tr)))))
+
+;; state is now (CURRENTPLAN, map-tree, width, treedepth)
+(defun construct-new-state (theplan map-tree width treedepth x y direction)
+  (cons theplan
+    (cons (update-tree map-tree
+                       (index-to-path (coords-to-index (+ x (directiondx direction))
+                                                       (+ y (directiondy direction))
+                                                       width)
+                                      treedepth)
+                       1)
+      (cons width treedepth))))
+
+(defun state-map-tree (state)
+  (car (cdr state)))
+
+(defun state-width (state)
+  (car (cdr (cdr state))))
+
+(defun state-treedepth (state)
+  (cdr (cdr (cdr state))))
+
+(defun ids-return-with-new-plan (thenewplan state world)
+    (cons (construct-new-state (cdr thenewplan) ;; path, minus first step
+                               (state-map-tree state) ;; map-tree, etc...
+                               (state-width state)
+                               (state-treedepth state)
+                               (car (location world))
+                               (cdr (location world))
+                               (car thenewplan))
+          (car thenewplan)))
 
 (defun ids-bot (state world)
   ;; find the path to the nearest pill or power pill and take a step towards it.
-  ;; state, if non-zero, is the current path we're on.
-  (if 0 ;; (not (atom state))
-    (cons (cdr state) (car state))
+    
+    
+    ;;(if (atom state)
+    ;;;; first run, build up representation...
+    ;;(ids-bot (cons 0
+    ;;           (cons (build-map-tree (car world))
+    ;;                 (cons (map-width (car world))
+    ;;                       (tree-depth (car world)))))
+    ;;         world)
 
-    ;; otherwise, we have to re-plan.
-    (ids-return-path
-      (ids-path-to-pill (car (location world))
-                        (cdr (location world))
-                        (build-map-tree (getthemap world))
-                        (map-width (getthemap world))
-                        (tree-depth (getthemap world)) ))))
+    ;; subsequent runs
+    (ids-return-with-new-plan
+      (if (not (atom (car state)))
+        ;; existing plan
+        (car state)
+        ;; otherwise, we have to re-plan.
+        (ids-path-to-pill (car (location world))
+                          (cdr (location world))
+                          (state-map-tree state)
+                          (state-width state) 
+                          (state-treedepth state)))
+    state world))
 
 (defun build-map ()
     (cons
@@ -301,4 +352,11 @@
 ;;              4)
 
 ;; for reals, do this.
-(cons 0 ids-bot)
+
+;; state is now (CURRENTPLAN, map-tree, width, treedepth)
+(cons 
+      (cons 0
+            (cons (build-map-tree (car FIRSTARG))
+                  (cons (map-width (car FIRSTARG))
+                        (tree-depth (car FIRSTARG)))))
+      ids-bot)

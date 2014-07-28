@@ -62,6 +62,8 @@ def syntax_to_expression(syntax, variable_names):
             return FunctionMention(syntax)
         if syntax in variable_names:
             return VariableMention(syntax, variable_names.index(syntax))
+        if syntax == "FIRSTARG":
+            return VariableMention(syntax, 0)
         assert False, "don't know what to do with token '{0}'".format(syntax)
 
     assert type(syntax) is nltk.Tree
